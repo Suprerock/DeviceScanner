@@ -15,7 +15,7 @@ requirements = python3,kivy,hostpython3,plyer
 # Android 最低版本
 android.api = 34
 android.minapi = 26
-android.ndk = 27
+android.ndk = 28c
 android.sdk = 34
 
 # 权限
