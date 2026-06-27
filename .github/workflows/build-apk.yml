@@ -42,11 +42,11 @@ jobs:
 
       - name: Build APK with Buildozer
         run: |
-          cd kivy_build && buildozer android debug 2>&1
+          buildozer android debug 2>&1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DeviceScanner-APK
-          path: kivy_build/bin/*.apk
+          path: bin/*.apk
           if-no-files-found: error
