@@ -11,18 +11,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
+      - name: Install system deps
         run: |
           sudo apt update -qq
-          sudo apt install -y -qq wget unzip ccache python3-pip openjdk-17-jdk-headless
+          sudo apt install -y -qq wget unzip ccache python3-pip python3-setuptools python3-wheel openjdk-21-jdk-headless
           pip3 install --user --break-system-packages cython buildozer setuptools wheel
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           echo "PIP_BREAK_SYSTEM_PACKAGES=1" >> $GITHUB_ENV
+
+      - name: Pre-install Android SDK build-tools (for aidl)
+        run: |
+          mkdir -p $HOME/android
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmd.zip
+          unzip -q /tmp/cmd.zip -d $HOME/android
+          mv $HOME/android/cmdline-tools $HOME/android/latest
+          yes | $HOME/android/latest/bin/sdkmanager --sdk_root=$HOME/android --licenses > /dev/null 2>&1 || true
+          $HOME/android/latest/bin/sdkmanager --sdk_root=$HOME/android \
+            "platforms;android-34" "build-tools;34.0.0" "ndk;28.0.12674087" > /dev/null 2>&1 || true
+          echo "ANDROID_HOME=$HOME/android" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android" >> $GITHUB_ENV
+          echo "$HOME/android/platform-tools" >> $GITHUB_PATH
+          echo "ANDROID_NDK_HOME=$HOME/android/ndk/28.0.12674087" >> $GITHUB_ENV
 
       - name: Build APK
         run: buildozer android debug 2>&1
