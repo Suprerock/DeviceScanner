@@ -1,0 +1,48 @@
+# 使用 GitHub Actions 自动打包 Kivy APK
+#
+# 使用方法:
+#   1. 把这个文件放到你的 GitHub 仓库 .github/workflows/build-apk.yml
+#   2. 推送到 GitHub（main 分支）
+#   3. 进入 GitHub → Actions 页面，自动开始打包
+#   4. 打包完成后在 Actions 页面下载 APK
+#
+# 不需要本地安装任何工具！云端编译。
+
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git autoconf libtool pkg-config zlib1g-dev libncurses5-dev \
+            libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev python3-pip python3-dev
+          pip install --user buildozer cython
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Build APK with Buildozer
+        run: |
+          cd kivy_build
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeviceScanner-APK
+          path: kivy_build/bin/*.apk
+          if-no-files-found: error
