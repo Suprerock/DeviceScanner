@@ -11,33 +11,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install build dependencies
+      - name: Install system deps
         run: |
           sudo apt update -qq
-          sudo apt install -y -qq wget unzip ccache python3-pip openjdk-17-jdk-headless
-          pip3 install --user --break-system-packages cython buildozer
+          sudo apt install -y -qq wget unzip ccache python3-pip python3-setuptools openjdk-17-jdk-headless
+          pip3 install --user --break-system-packages cython buildozer setuptools wheel
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK with build-tools (includes aidl)
         run: |
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmd.zip
-          unzip -q /tmp/cmd.zip -d /tmp/android-sdk
-          mkdir -p /tmp/android-sdk/cmdline-tools
-          mv /tmp/android-sdk/cmdline-tools /tmp/android-sdk/latest 2>/dev/null; true
-          yes | /tmp/android-sdk/latest/bin/sdkmanager --sdk_root=/tmp/android-sdk "platforms;android-34" "build-tools;34.0.0" "ndk;28.0.12674087" "platform-tools" > /dev/null 2>&1; true
-          echo "ANDROID_HOME=/tmp/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/tmp/android-sdk" >> $GITHUB_ENV
-          echo "/tmp/android-sdk/platform-tools" >> $GITHUB_PATH
+          mkdir -p /opt/android-sdk
+          cd /opt/android-sdk
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null; true
+          yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=/opt/android-sdk --licenses > /dev/null 2>&1
+          cmdline-tools/latest/bin/sdkmanager --sdk_root=/opt/android-sdk \
+            "platforms;android-34" "build-tools;34.0.0" "ndk;28.0.12674087" "platform-tools"
+          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
+          echo "/opt/android-sdk/platform-tools" >> $GITHUB_PATH
+          echo "PATH=/opt/android-sdk/build-tools/34.0.0:$PATH" >> $GITHUB_ENV
+
+      - name: Verify aidl exists
+        run: ls -la /opt/android-sdk/build-tools/34.0.0/aidl && aidl --version
 
       - name: Build APK
         run: |
-          export ANDROID_HOME=/tmp/android-sdk
-          export ANDROID_SDK_ROOT=/tmp/android-sdk
-          export PATH="$PATH:/tmp/android-sdk/platform-tools"
+          export ANDROID_HOME=/opt/android-sdk
+          export ANDROID_SDK_ROOT=/opt/android-sdk
+          export PATH="/opt/android-sdk/build-tools/34.0.0:$PATH"
           buildozer android debug
 
       - name: Upload APK
