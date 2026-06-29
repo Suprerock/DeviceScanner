@@ -50,8 +50,9 @@ log_level = 2
 # 仓库镜像（加速下载，中国大陆推荐）
 p4a.branch = develop
 p4a.bootstrap = sdl2
-android.ndk.mirror = https://mirrors.ustc.edu.cn/android-ndk/
-android.sdk.mirror = https://mirrors.ustc.edu.cn/android/repository/
+android.accept_sdk_license = True
+
+
 
 [buildozer]
 
