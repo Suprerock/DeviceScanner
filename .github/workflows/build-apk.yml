@@ -10,21 +10,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system deps
+      - name: Install deps
         run: |
           sudo apt update -qq
           sudo apt install -y -qq python3-pip python3-setuptools wget unzip git openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev ccache
-
-      - name: Install buildozer
-        run: |
           python3 -m pip install --user --upgrade pip
           python3 -m pip install --user buildozer cython
 
       - name: Build APK
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH=$JAVA_HOME/bin:$HOME/.local/bin:$PATH
           buildozer android debug
-        shell: bash
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
