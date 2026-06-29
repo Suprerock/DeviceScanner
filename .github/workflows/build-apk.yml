@@ -9,13 +9,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Install system packages
+        run: |
+          sudo apt update -qq
+          sudo apt install -y -qq wget unzip ccache python3-pip python3-setuptools \
+            python3-dev openjdk-17-jdk-headless libncurses-dev cmake libffi-dev \
+            libssl-dev autoconf libtool pkg-config zlib1g-dev
+
+      - name: Install Python deps
+        run: |
+          pip3 install --user --break-system-packages buildozer cython==0.29.37
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "PIP_BREAK_SYSTEM_PACKAGES=1" >> $GITHUB_ENV
+
+      - name: Setup Android SDK
+        run: |
+          cd /tmp
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mkdir -p /opt/android-sdk
+          mv cmdline-tools /opt/android-sdk/latest
+          yes | /opt/android-sdk/latest/bin/sdkmanager --sdk_root=/opt/android-sdk --licenses 2>&1 || true
+          /opt/android-sdk/latest/bin/sdkmanager --sdk_root=/opt/android-sdk \
+            "platforms;android-34" "build-tools;34.0.0" "ndk;28.0.12674087" "platform-tools" 2>&1
+          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
+          echo "/opt/android-sdk/platform-tools" >> $GITHUB_PATH
 
       - name: Build APK
-        uses: digreatbrian/buildozer-action@v1
-        with:
-          workdir: .
+        run: buildozer android debug 2>&1
+        env:
+          ANDROID_HOME: /opt/android-sdk
+          ANDROID_SDK_ROOT: /opt/android-sdk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
